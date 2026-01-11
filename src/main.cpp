@@ -1,7 +1,16 @@
 #include <drogon/drogon.h>
 #include <filesystem>
+#include <yaml-cpp/yaml.h>
 
 int main() {
+    
+    // initialize cache/ directory
+    if (!(std::filesystem::exists("cache") || std::filesystem::exists("../cache"))) {
+        std::filesystem::create_directory("cache");
+        LOG_INFO << "Created cache directory";
+    }
+    
+    // load configuration files
     std::string configPath;
     if (std::filesystem::exists("config.json")) {
         configPath = "config.json";

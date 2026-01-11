@@ -1,0 +1,3 @@
+shutdown_options:
+    cache_cleanup: true
+    log_cleanup: true

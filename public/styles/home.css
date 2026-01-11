@@ -28,7 +28,7 @@ html, body {
 .sidebar h1 {
     font-size: 1.8rem;
     font-weight: 800;
-    margin: 0 0 3.5rem 0;
+    margin: 0 0 2.5rem 0;
     letter-spacing: -0.02em;
 }
 
@@ -49,6 +49,11 @@ html, body {
 
 .sidebar li:hover {
     color: #fff;
+}
+
+.sidebar li a {
+    text-decoration: none;
+    color: inherit;
 }
 
 .copyright {
