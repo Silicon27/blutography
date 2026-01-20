@@ -23,7 +23,7 @@ int main() {
         return 1;
     }
 
-    // initialize cache/ and logs/ directory
+    // initialize cache/, logs/, and gallery_previews/ directory
     if (!std::filesystem::exists("cache")) {
         std::filesystem::create_directory("cache");
         LOG_INFO << "Created cache directory";
@@ -32,10 +32,16 @@ int main() {
         std::filesystem::create_directory("logs");
         LOG_INFO << "Created log directory";
     }
+    if (!std::filesystem::exists("gallery_previews")) {
+        std::filesystem::create_directory("gallery_previews");
+        LOG_INFO << "Created gallery_previews directory";
+    }
 
     try {
         drogon::app().loadConfigFile(configPath);
         LOG_INFO << "Loaded config file from: " << std::filesystem::absolute(configPath);
+        LOG_INFO << "Current working directory: " << std::filesystem::current_path();
+        LOG_INFO << "Gallery previews path exists: " << std::filesystem::exists("gallery_previews");
     } catch (const std::exception& e) {
         LOG_ERROR << "Failed to load config file: " << e.what();
         return 1;

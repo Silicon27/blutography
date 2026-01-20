@@ -2,9 +2,918 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Blutography - Gallery</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLUTOGRAPHY - GALLERY</title>
+    <link rel="stylesheet" href="/styles/home.css">
+    <style>
+        body {
+            background-color: #0c0c0c;
+            color: #fff;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .gallery-container {
+            padding: 40px;
+            margin: 20px 20px 20px 300px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            min-height: calc(100vh - 80px);
+            position: relative;
+            transition: margin-left 0.4s ease;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-220px);
+        }
+
+        .sidebar.hidden + .gallery-container {
+            margin-left: 80px;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            right: -40px;
+            top: 20px;
+            background: #0c0c0c;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .gallery-container {
+                margin-left: 20px;
+                padding: 20px;
+            }
+            .sidebar {
+                position: fixed;
+                z-index: 2000;
+                height: 100vh;
+                margin: 0;
+            }
+        }
+
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 60px;
+            font-family: "SF Mono", monospace;
+        }
+
+        .gallery-title {
+            font-size: 14px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon {
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s;
+        }
+
+        .search-icon svg {
+            fill: rgba(255, 255, 255, 0.4);
+        }
+
+        .search-input {
+            width: 0;
+            overflow: hidden;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-family: "SF Mono", monospace;
+            font-size: 11px;
+            outline: none;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0;
+            margin-left: 0;
+            opacity: 0;
+        }
+
+        .search-container.active .search-input {
+            width: 200px;
+            padding: 5px 10px;
+            margin-left: 15px;
+            opacity: 1;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+            transition: all 0.3s ease;
+        }
+
+        @media (min-width: 1200px) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .frame {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            transition: transform 0.4s ease, opacity 0.3s ease;
+        }
+
+        .frame:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.8;
+        }
+
+        .frame:hover img {
+            transform: scale(1.05);
+            opacity: 1;
+        }
+
+        .frame-meta {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            pointer-events: none;
+        }
+
+        .frame:hover .frame-meta {
+            opacity: 1;
+        }
+
+        .meta-line {
+            font-family: "SF Mono", monospace;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .meta-line span {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Popup */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .popup-content {
+            width: 90vw;
+            height: 80vh;
+            display: flex;
+            background: #0c0c0c;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .popup-image-container {
+            flex: 2;
+            background: #000;
+            display: flex;
+            justify(Current directory: /Users/silicon/CLionProjects/blutography)
+        }
+
+        .popup-image-container img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+        }
+
+        .popup-details {
+            flex: 1;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid rgba(255, 255, 255, 0.03);
+            font-family: "SF Mono", monospace;
+        }
+
+        .popup-title {
+            font-size: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .popup-quote {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 40px;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .popup-meta-section {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .popup-meta-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            padding-bottom: 10px;
+        }
+
+        .popup-meta-item span {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .popup-actions {
+            margin-top: 40px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 12px 24px;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        .close-popup {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            cursor: pointer;
+            opacity: 0.3;
+            transition: opacity 0.3s;
+        }
+
+        .close-popup:hover {
+            opacity: 1;
+        }
+
+        /* Cart Indicator */
+        .cart-indicator {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            background: #fff;
+            color: #000;
+            padding: 15px 30px;
+            font-family: "SF Mono", monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            display: none;
+            z-index: 500;
+            transition: transform 0.3s;
+        }
+
+        .cart-indicator:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Cart Modal */
+        .cart-modal {
+            position: fixed;
+            bottom: 100px;
+            right: 40px;
+            width: 300px;
+            background: #0c0c0c;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 501;
+            font-family: "SF Mono", monospace;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .cart-remove {
+            cursor: pointer;
+            color: #ff4d4d;
+        }
+
+        .cart-footer {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Transitions */
+        .fade-out {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+    </style>
 </head>
 <body>
 
+    <nav class="sidebar hideable-sidebar" id="sidebar">
+        <div class="sidebar-toggle" id="sidebar-toggle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </div>
+        <h1>Blutography</h1>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li>Code</li>
+            <li>Blog</li>
+            <li>CV</li>
+            <li>Contact</li>
+            <li><a href="https://www.instagram.com/sn_blu1/" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+        </ul>
+        <div class="copyright">
+            Copyright © All rights reserved.
+        </div>
+    </nav>
+
+    <div class="gallery-container">
+        <div class="gallery-header">
+            <div class="gallery-title">Archive // Portfolio</div>
+            <div class="search-container" id="search-container">
+                <div class="search-icon" id="search-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                </div>
+                <input type="text" class="search-input" id="search-input" placeholder="SEARCH BY NAME OR ID...">
+            </div>
+        </div>
+
+        <div class="grid" id="gallery-grid">
+            <!-- Items injected by JS -->
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="popup-overlay">
+        <div class="popup-content">
+            <div class="close-popup" id="close-popup">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </div>
+            <div class="popup-image-container">
+                <img id="popup-img" src="" alt="">
+            </div>
+            <div class="popup-details">
+                <div class="popup-title" id="popup-title">IMAGE_NAME</div>
+                <div class="popup-quote" id="popup-quote">"This is a sample quote for the image."</div>
+                
+                <div class="popup-meta-section">
+                    <div class="popup-meta-item">ID <span id="popup-id">#HASH</span></div>
+                    <div class="popup-meta-item">Date <span id="popup-date">2026:01:20 21:57:00</span></div>
+                    <div class="popup-meta-item">Model <span id="popup-model">CAMERA MODEL</span></div>
+                    <div class="popup-meta-item">Exposure <span id="popup-exposure">1/100</span></div>
+                    <div class="popup-meta-item">ISO <span id="popup-iso">100</span></div>
+                    <div class="popup-meta-item">Resolution <span id="popup-res">0000 x 0000</span></div>
+                </div>
+
+                <div class="popup-actions">
+                    <button class="btn" id="add-to-cart">Add to Bundle</button>
+                    <button class="btn" id="direct-download">Download Original</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cart-indicator" id="cart-indicator">
+        Bundle (<span id="cart-count">0</span>)
+    </div>
+
+    <div class="cart-modal" id="cart-modal">
+        <div id="cart-items-list"></div>
+        <div class="cart-footer">
+            <button class="btn" id="download-all">Download Bundle</button>
+            <button class="btn" id="clear-cart" style="border-color: rgba(255,77,77,0.3); color: #ff4d4d;">Discard All</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        let galleryData = [];
+        let cart = [];
+        let previewImages = new Map(); // Map of filename -> blob URL
+
+        // IndexedDB for caching the preview bundle
+        const DB_NAME = 'blutography_cache';
+        const DB_VERSION = 2;
+        const STORE_NAME = 'previews';
+        const IMAGES_STORE = 'images';
+
+        // Function to clear cache - call from browser console: clearGalleryCache()
+        window.clearGalleryCache = async function() {
+            try {
+                await indexedDB.deleteDatabase(DB_NAME);
+                previewImages.clear();
+                console.log('Gallery cache cleared! Refresh the page.');
+            } catch (e) {
+                console.error('Failed to clear cache:', e);
+            }
+        };
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                    // Store for individual images
+                    if (!db.objectStoreNames.contains(IMAGES_STORE)) {
+                        db.createObjectStore(IMAGES_STORE, { keyPath: 'filename' });
+                    }
+                };
+            });
+        }
+
+        async function getCachedBundle(etag) {
+            try {
+                const db = await openDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.get('bundle');
+                    request.onsuccess = () => {
+                        const result = request.result;
+                        if (result && result.etag === etag) {
+                            resolve(result.data);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    request.onerror = () => resolve(null);
+                });
+            } catch (e) {
+                console.warn('IndexedDB not available:', e);
+                return null;
+            }
+        }
+
+        async function setCachedBundle(etag, data) {
+            try {
+                const db = await openDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    store.put({ id: 'bundle', etag: etag, data: data });
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            } catch (e) {
+                console.warn('Failed to cache bundle:', e);
+            }
+        }
+
+        // Cache individual image to IndexedDB
+        async function cacheImage(filename, blob) {
+            try {
+                const db = await openDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(IMAGES_STORE, 'readwrite');
+                    const store = tx.objectStore(IMAGES_STORE);
+                    store.put({ filename: filename, data: blob });
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            } catch (e) {
+                console.warn('Failed to cache image:', e);
+            }
+        }
+
+        // Get individual image from cache
+        async function getCachedImage(filename) {
+            try {
+                const db = await openDB();
+                return new Promise((resolve) => {
+                    const tx = db.transaction(IMAGES_STORE, 'readonly');
+                    const store = tx.objectStore(IMAGES_STORE);
+                    const request = store.get(filename);
+                    request.onsuccess = () => {
+                        const result = request.result;
+                        resolve(result ? result.data : null);
+                    };
+                    request.onerror = () => resolve(null);
+                });
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function loadPreviewsBundle() {
+            // Get cached bundle info
+            let cachedInfo = null;
+            try {
+                const db = await openDB();
+                cachedInfo = await new Promise((resolve) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.get('bundle');
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => resolve(null);
+                });
+            } catch (e) {
+                console.warn('Could not read cache info:', e);
+            }
+
+            // Fetch with If-None-Match if we have a cached version
+            const headers = {};
+            if (cachedInfo && cachedInfo.etag) {
+                headers['If-None-Match'] = cachedInfo.etag;
+            }
+
+            const response = await fetch('/gallery/previews', { headers });
+
+            let zipData;
+            let serverEtag;
+
+            if (response.status === 304 && cachedInfo) {
+                // Not modified, use cached data
+                console.log('Using cached preview bundle (304)');
+                zipData = cachedInfo.data;
+                serverEtag = cachedInfo.etag;
+            } else if (response.ok) {
+                console.log('Downloading preview bundle...');
+                serverEtag = response.headers.get('ETag');
+                zipData = await response.arrayBuffer();
+                // Cache the bundle
+                await setCachedBundle(serverEtag, zipData);
+            } else {
+                throw new Error(`Failed to fetch previews bundle: ${response.status}`);
+            }
+
+            // Extract the ZIP
+            const zip = await JSZip.loadAsync(zipData);
+
+            // Create blob URLs for each image
+            for (const [filename, file] of Object.entries(zip.files)) {
+                if (!file.dir) {
+                    const blob = await file.async('blob');
+                    const url = URL.createObjectURL(blob);
+                    previewImages.set(filename, url);
+                    // Also cache individual images for fallback
+                    await cacheImage(filename, blob);
+                }
+            }
+
+            console.log(`Loaded ${previewImages.size} preview images from bundle`);
+        }
+
+        // Fetch a missing image from the server and cache it
+        async function fetchAndCacheImage(previewName) {
+            // First check if we have it cached individually
+            const cachedBlob = await getCachedImage(previewName);
+            if (cachedBlob) {
+                const url = URL.createObjectURL(cachedBlob);
+                previewImages.set(previewName, url);
+                console.log(`Loaded ${previewName} from individual cache`);
+                return url;
+            }
+
+            // Fetch from server using the controller endpoint
+            console.log(`Fetching missing image: ${previewName}`);
+            try {
+                const response = await fetch(`/gallery/preview/${previewName}`);
+                if (!response.ok) {
+                    console.warn(`Image not found on server: ${previewName} (${response.status})`);
+                    return null; // Image doesn't exist
+                }
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                previewImages.set(previewName, url);
+                // Cache for future use
+                await cacheImage(previewName, blob);
+                return url;
+            } catch (e) {
+                console.error(`Failed to fetch ${previewName}:`, e);
+                return null; // Return null instead of fallback URL
+            }
+        }
+
+        // Check if all required images are present, fetch missing ones
+        async function ensureAllImagesLoaded(requiredImages) {
+            const missingImages = requiredImages.filter(name => !previewImages.has(name));
+
+            if (missingImages.length > 0) {
+                console.log(`Missing ${missingImages.length} images, fetching...`);
+                // Fetch missing images in parallel
+                await Promise.all(missingImages.map(name => fetchAndCacheImage(name)));
+            }
+        }
+
+        function getPreviewUrl(previewName) {
+            const url = previewImages.get(previewName);
+            if (url) return url;
+            // Return a data URL for a placeholder if image is missing
+            return null;
+        }
+
+        // Create a placeholder SVG for missing images
+        const PLACEHOLDER_SVG = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect fill="#1a1a1a" width="400" height="300"/><text x="50%" y="50%" fill="#444" font-family="monospace" font-size="14" text-anchor="middle" dy=".3em">Image Unavailable</text></svg>')}`;
+
+        async function init() {
+            console.log('Gallery init starting...');
+
+            // Load gallery data first
+            const dataResponse = await fetch('/gallery/data');
+            galleryData = await dataResponse.json();
+            console.log(`Loaded ${galleryData.length} gallery items:`, galleryData.map(i => i.previewName));
+
+            // Get list of required preview images
+            const requiredPreviews = galleryData.map(item => item.previewName);
+            console.log('Required previews:', requiredPreviews);
+
+            // Try to load preview bundle
+            try {
+                await loadPreviewsBundle();
+                console.log('Preview bundle loaded, previewImages map:', [...previewImages.keys()]);
+            } catch (err) {
+                console.error('Failed to load preview bundle:', err);
+            }
+
+            // Check for and fetch any missing images
+            console.log('Checking for missing images...');
+            await ensureAllImagesLoaded(requiredPreviews);
+            console.log('After ensureAllImagesLoaded, previewImages map:', [...previewImages.keys()]);
+
+            loadCart();
+            renderGallery(galleryData);
+
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('id')) {
+                const item = galleryData.find(i => i.id === urlParams.get('id'));
+                if (item) openPopup(item);
+            }
+        }
+
+        function renderGallery(data) {
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+            
+            data.forEach(item => {
+                const imgUrl = getPreviewUrl(item.previewName) || PLACEHOLDER_SVG;
+                const frame = document.createElement('div');
+                frame.className = 'frame';
+                frame.innerHTML = `
+                    <img src="${imgUrl}" alt="${item.name}" onerror="this.src='${PLACEHOLDER_SVG}'">
+                    <div class="frame-meta">
+                        <div class="meta-line">Time // <span>${item.metadata.dateTime.split(' ')[1] || '[null]'}</span></div>
+                        <div class="meta-line">Device // <span>${item.metadata.model || '[null]'}</span></div>
+                        <div class="meta-line">Res // <span>${item.metadata.width} x ${item.metadata.height}</span></div>
+                    </div>
+                `;
+                frame.onclick = () => openPopup(item);
+                grid.appendChild(frame);
+            });
+        }
+
+        function openPopup(item) {
+            const overlay = document.getElementById('popup-overlay');
+            const imgUrl = getPreviewUrl(item.previewName) || PLACEHOLDER_SVG;
+            document.getElementById('popup-img').src = imgUrl;
+            document.getElementById('popup-img').onerror = function() { this.src = PLACEHOLDER_SVG; };
+            document.getElementById('popup-title').innerText = item.name;
+            document.getElementById('popup-quote').innerText = item.quote ? `"${item.quote}"` : "";
+            document.getElementById('popup-id').innerText = `#${item.id}`;
+            document.getElementById('popup-date').innerText = item.metadata.dateTime;
+            document.getElementById('popup-model').innerText = item.metadata.model;
+            document.getElementById('popup-exposure').innerText = item.metadata.exposure;
+            document.getElementById('popup-iso').innerText = item.metadata.iso;
+            document.getElementById('popup-res').innerText = `${item.metadata.width} x ${item.metadata.height}`;
+
+            const addToCartBtn = document.getElementById('add-to-cart');
+            const directDownloadBtn = document.getElementById('direct-download');
+            
+            updateAddToCartButton(item.id);
+            
+            addToCartBtn.onclick = () => toggleCart(item);
+            directDownloadBtn.onclick = () => {
+                if (!cart.some(i => i.id === item.id)) {
+                    toggleCart(item);
+                }
+                document.getElementById('cart-modal').style.display = 'flex';
+            };
+
+            overlay.style.display = 'flex';
+            history.pushState(null, '', `/gallery?id=${item.id}`);
+        }
+
+        function closePopup() {
+            document.getElementById('popup-overlay').style.display = 'none';
+            history.pushState(null, '', '/gallery');
+        }
+
+        document.getElementById('close-popup').onclick = closePopup;
+        document.getElementById('popup-overlay').onclick = (e) => {
+            if (e.target === document.getElementById('popup-overlay')) closePopup();
+        };
+
+        // Search Logic
+        const searchBtn = document.getElementById('search-btn');
+        const searchContainer = document.getElementById('search-container');
+        const searchInput = document.getElementById('search-input');
+
+        searchBtn.onclick = () => searchContainer.classList.toggle('active');
+
+        searchInput.oninput = (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = galleryData.filter(item => 
+                item.name.toLowerCase().includes(term) || 
+                item.id.toLowerCase().includes(term)
+            );
+            
+            const grid = document.getElementById('gallery-grid');
+            grid.classList.add('fade-out');
+            setTimeout(() => {
+                renderGallery(filtered);
+                grid.classList.remove('fade-out');
+            }, 200);
+        };
+
+        // Cart Logic
+        function loadCart() {
+            const cookie = document.cookie.split('; ').find(row => row.startsWith('bundle_cart='));
+            if (cookie) {
+                cart = JSON.parse(decodeURIComponent(cookie.split('=')[1]));
+                updateCartUI();
+            }
+        }
+
+        function saveCart() {
+            document.cookie = `bundle_cart=${encodeURIComponent(JSON.stringify(cart))}; path=/; max-age=31536000`;
+            updateCartUI();
+        }
+
+        function toggleCart(item) {
+            const index = cart.findIndex(i => i.id === item.id);
+            if (index > -1) {
+                cart.splice(index, 1);
+            } else {
+                cart.push({ id: item.id, name: item.name });
+            }
+            saveCart();
+            updateAddToCartButton(item.id);
+        }
+
+        function updateAddToCartButton(id) {
+            const btn = document.getElementById('add-to-cart');
+            const inCart = cart.some(i => i.id === id);
+            btn.innerText = inCart ? 'Discard from Bundle' : 'Add to Bundle';
+            btn.style.color = inCart ? '#ff4d4d' : '#fff';
+            btn.style.borderColor = inCart ? 'rgba(255,77,77,0.3)' : 'rgba(255,255,255,0.2)';
+        }
+
+        function updateCartUI() {
+            const count = document.getElementById('cart-count');
+            const indicator = document.getElementById('cart-indicator');
+            count.innerText = cart.length;
+            indicator.style.display = cart.length > 0 ? 'block' : 'none';
+            
+            const list = document.getElementById('cart-items-list');
+            list.innerHTML = '';
+            cart.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'cart-item';
+                el.innerHTML = `
+                    <span>${item.name}</span>
+                    <span class="cart-remove" onclick="event.stopPropagation(); removeFromCart('${item.id}')">×</span>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(i => i.id !== id);
+            saveCart();
+            if (document.getElementById('popup-overlay').style.display === 'flex') {
+                const currentId = document.getElementById('popup-id').innerText.replace('#', '');
+                if (currentId === id) updateAddToCartButton(id);
+            }
+        }
+
+        // Sidebar toggle logic
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        sidebarToggle.onclick = () => {
+            sidebar.classList.toggle('hidden');
+        };
+
+        window.removeFromCart = removeFromCart;
+
+        document.getElementById('cart-indicator').onclick = () => {
+            const modal = document.getElementById('cart-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        };
+
+        document.getElementById('clear-cart').onclick = () => {
+            cart = [];
+            saveCart();
+            document.getElementById('cart-modal').style.display = 'none';
+            const currentIdEl = document.getElementById('popup-id');
+            if (currentIdEl) updateAddToCartButton(currentIdEl.innerText.replace('#', ''));
+        };
+
+        document.getElementById('download-all').onclick = async () => {
+            const btn = document.getElementById('download-all');
+            btn.innerText = 'PREPARING...';
+            btn.disabled = true;
+
+            const response = await fetch('/gallery/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: cart.map(i => i.id) })
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const disposition = response.headers.get('Content-Disposition');
+                const zipName = disposition ? disposition.split('filename=')[1] : 'bundle.zip';
+                a.href = url;
+                a.download = zipName;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } else {
+                alert('Bundle download failed. Please try again.');
+            }
+
+            btn.innerText = 'DOWNLOAD BUNDLE';
+            btn.disabled = false;
+        };
+
+        init();
+    </script>
 </body>
 </html>

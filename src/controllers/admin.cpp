@@ -1,11 +1,16 @@
 #include <controllers/admin.hpp>
 #include <filters/adminfilter.hpp>
 #include <support/b2service.hpp>
+#include <support/image_utils.hpp>
+#include <support/gallery_storage.hpp>
 #include <drogon/HttpAppFramework.h>
 #include <drogon/MultiPart.h>
+#include <drogon/utils/Utilities.h>
 #include <atomic>
 #include <mutex>
 #include <algorithm>
+#include <fstream>
+#include <thread>
 
 namespace blutography {
     static std::string trim(const std::string& s) {
@@ -60,23 +65,6 @@ namespace blutography {
         callback(resp);
     }
 
-    static std::shared_ptr<B2Service> getB2Service() {
-        auto customConfig = drogon::app().getCustomConfig();
-        const auto& b2Config = customConfig["b2"];
-        
-        std::string keyId = b2Config.get("keyId", "").asString();
-        std::string bucketName = b2Config.get("bucketName", "").asString();
-        const char* env_api_key = std::getenv("DB_API_KEY");
-        std::string applicationKey = env_api_key ? env_api_key : "";
-
-        if (keyId.empty() || bucketName.empty() || applicationKey.empty()) {
-            return nullptr;
-        }
-
-        static auto service = std::make_shared<B2Service>(keyId, applicationKey, bucketName);
-        return service;
-    }
-
     void Admin_Controller::uploadImage(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback) {
         drogon::MultiPartParser fileUpload;
         if (fileUpload.parse(req) != 0 || fileUpload.getFiles().empty()) {
@@ -87,7 +75,7 @@ namespace blutography {
             return;
         }
 
-        auto b2Service = getB2Service();
+        auto b2Service = B2Service::instance();
         if (!b2Service) {
             auto resp = drogon::HttpResponse::newHttpResponse();
             resp->setStatusCode(drogon::k500InternalServerError);
@@ -97,6 +85,11 @@ namespace blutography {
         }
 
         auto &files = fileUpload.getFiles();
+        auto &params = fileUpload.getParameters();
+        
+        std::string reqName = params.count("name") ? params.at("name") : "";
+        std::string reqQuote = params.count("quote") ? params.at("quote") : "";
+
         auto shared_callback = std::make_shared<std::function<void(const drogon::HttpResponsePtr &)>>(std::move(callback));
         auto results = std::make_shared<Json::Value>();
         results->resize(0);
@@ -104,30 +97,77 @@ namespace blutography {
 
         for (auto &file : files) {
             std::string fileName = file.getFileName();
-            std::string fileContent(file.fileData(), file.fileLength());
+            // Copy data to a shared buffer for background processing
+            auto fileContent = std::make_shared<std::string>(file.fileData(), file.fileLength());
             
-            b2Service->upload(fileName, std::move(fileContent), [fileName, results, remaining, shared_callback](bool success, std::string fileId) {
-                Json::Value res;
-                res["fileName"] = fileName;
-                res["success"] = success;
-                res["fileId"] = fileId;
-                
-                static std::mutex resultsMutex;
-                {
-                    std::lock_guard<std::mutex> lock(resultsMutex);
-                    results->append(res);
+            // Generate unique ID (hash)
+            std::string imageId = drogon::utils::getSha1(*fileContent).substr(0, 12);
+            std::string name = reqName.empty() ? fileName : reqName;
+            std::string quote = reqQuote;
+
+            // Offload CPU-intensive compression to a background thread to keep IO loop free
+            std::thread([imageId, name, quote, fileName, fileContent, b2Service, results, remaining, shared_callback]() {
+                // 1. Extract Metadata
+                image::Metadata metadata = image::extractMetadata(*fileContent);
+
+                // 2. Generate and save preview locally for the server-side gallery
+                std::string previewName = fileName;
+                try {
+                    std::string previewData = image::createGalleryPreview(*fileContent, fileName);
+                    if (!previewData.empty()) {
+                        size_t lastDot = previewName.find_last_of(".");
+                        if (lastDot != std::string::npos) {
+                            previewName = previewName.substr(0, lastDot) + ".jpg";
+                        } else {
+                            previewName += ".jpg";
+                        }
+
+                        std::string previewPath = "gallery_previews/" + previewName;
+                        std::ofstream out(previewPath, std::ios::binary);
+                        if (out) {
+                            out.write(previewData.data(), previewData.size());
+                            LOG_DEBUG << "Gallery preview saved: " << previewPath;
+                        }
+                    }
+                } catch (const std::exception& e) {
+                    LOG_ERROR << "Gallery preview generation failed for " << fileName << ": " << e.what();
                 }
 
-                if (--(*remaining) == 0) {
-                    auto resp = drogon::HttpResponse::newHttpJsonResponse(*results);
-                    (*shared_callback)(resp);
-                }
-            });
+                // 3. Store in GalleryStorage
+                GalleryItem item;
+                item.id = imageId;
+                item.name = name;
+                item.quote = quote;
+                item.fileName = fileName;
+                item.previewName = previewName;
+                item.metadata = metadata;
+                GalleryStorage::instance().addItem(item);
+
+                // 4. Upload original (lossless) to Backblaze B2 database
+                b2Service->upload(fileName, std::move(*fileContent), [fileName, results, remaining, shared_callback](bool success, std::string fileId) {
+                    Json::Value res;
+                    res["fileName"] = fileName;
+                    res["success"] = success;
+                    res["fileId"] = fileId;
+                    
+                    static std::mutex resultsMutex;
+                    {
+                        std::lock_guard<std::mutex> lock(resultsMutex);
+                        results->append(res);
+                    }
+
+                    if (--(*remaining) == 0) {
+                        // All files in this batch processed
+                        auto resp = drogon::HttpResponse::newHttpJsonResponse(*results);
+                        (*shared_callback)(resp);
+                    }
+                });
+            }).detach();
         }
     }
 
     void Admin_Controller::b2Test(const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&callback) {
-        auto b2Service = getB2Service();
+        auto b2Service = B2Service::instance();
         if (!b2Service) {
             auto resp = drogon::HttpResponse::newHttpResponse();
             resp->setBody("Error: B2 configuration missing or DB_API_KEY not set");

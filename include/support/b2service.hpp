@@ -27,6 +27,7 @@ struct B2UploadData {
 
 class B2Service : public std::enable_shared_from_this<B2Service> {
 public:
+    static std::shared_ptr<B2Service> instance();
     B2Service(std::string keyId, std::string applicationKey, std::string bucketName);
 
     // Runs Ping (Authorize), Upload, and Delete sequence
@@ -36,6 +37,10 @@ public:
     void upload(const std::string& fileName, 
                 std::string&& content, 
                 std::function<void(bool success, std::string fileId)>&& callback);
+
+    // High-level download method
+    void download(const std::string& fileName,
+                  std::function<void(bool success, std::string&& content)>&& callback);
 
 private:
     std::string keyId_;

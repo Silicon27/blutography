@@ -16,6 +16,9 @@ app:
   use_implicit_page: true
   implicit_page: "index.html"
   upload_path: "uploads"
+  static_file_headers:
+    - name: "Access-Control-Allow-Origin"
+      value: "*"
   file_types:
     - gif
     - png
@@ -36,6 +39,18 @@ app:
   mime:
     avif: image/avif
   locations:
+    - uri_prefix: "/gallery_previews"
+      alias: "./gallery_previews"
+      is_case_sensitive: false
+      allow_all: true
+      is_recursive: true
+      filters: []
+    - uri_prefix: "/previews"
+      alias: "./gallery_previews"
+      is_case_sensitive: false
+      allow_all: true
+      is_recursive: true
+      filters: []
     - default_content_type: "text/plain"
       alias: ""
       is_case_sensitive: false

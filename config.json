@@ -113,12 +113,12 @@
         //For example, by default, http://localhost/a-directory resolves to http://localhost/a-directory/index.html.
         "implicit_page": "index.html",
         //static_file_headers: Headers for static files
-        /*"static_file_headers": [
+        "static_file_headers": [
             {
-                "name": "field-name",
-                "value": "field-value"
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
             }
-        ],*/
+        ],
         //upload_path: The path to save the uploaded file. "uploads" by default. 
         //If the path isn't prefixed with /, ./ or ../,
         //it is relative path of document_root path
@@ -156,6 +156,22 @@
         },
         //locations: An array of locations of static files for GET requests.
         "locations": [
+            {
+                "uri_prefix": "/gallery_previews",
+                "alias": "./gallery_previews",
+                "is_case_sensitive": false,
+                "allow_all": true,
+                "is_recursive": true,
+                "filters": []
+            },
+            {
+                "uri_prefix": "/previews",
+                "alias": "./gallery_previews",
+                "is_case_sensitive": false,
+                "allow_all": true,
+                "is_recursive": true,
+                "filters": []
+            },
             {
                 //uri_prefix: The URI prefix of the location prefixed with "/", the default value is "" that disables the location.
                 //"uri_prefix": "/.well-known/acme-challenge/",

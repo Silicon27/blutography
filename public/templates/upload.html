@@ -52,6 +52,36 @@
             color: rgba(255, 255, 255, 0.4);
         }
 
+        .input-group {
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-group label {
+            font-family: "SF Mono", monospace;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .input-group input {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff;
+            padding: 12px;
+            font-family: "SF Mono", monospace;
+            font-size: 11px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
         .file-list {
             margin-top: 30px;
             width: 100%;
@@ -61,10 +91,36 @@
 
         .file-item {
             display: flex;
-            align-items: center;
-            padding: 12px 0;
+            flex-direction: column;
+            padding: 20px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            gap: 15px;
+        }
+
+        .file-main {
+            display: flex;
+            align-items: center;
             gap: 20px;
+        }
+
+        .file-meta-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .file-meta-inputs input {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff;
+            padding: 8px 12px;
+            font-family: "SF Mono", monospace;
+            font-size: 10px;
+            outline: none;
+        }
+
+        .file-meta-inputs input:focus {
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .file-info {
@@ -266,12 +322,18 @@
             item.className = 'file-item';
             item.id = `item-${fileObj.id}`;
             item.innerHTML = `
-                <div class="file-info">
-                    <div class="file-name">${fileObj.file.name}</div>
-                    <div class="file-status" id="status-${fileObj.id}">Queued // ${(fileObj.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                <div class="file-main">
+                    <div class="file-info">
+                        <div class="file-name">${fileObj.file.name}</div>
+                        <div class="file-status" id="status-${fileObj.id}">Queued // ${(fileObj.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="bar-${fileObj.id}"></div>
+                    </div>
                 </div>
-                <div class="progress-container">
-                    <div class="progress-bar" id="bar-${fileObj.id}"></div>
+                <div class="file-meta-inputs">
+                    <input type="text" id="name-${fileObj.id}" placeholder="REPRESENTATIONAL NAME (OPTIONAL)">
+                    <input type="text" id="quote-${fileObj.id}" placeholder="STORY / QUOTE (OPTIONAL)">
                 </div>
             `;
             fileList.appendChild(item);
@@ -306,6 +368,17 @@
                 const xhr = new XMLHttpRequest();
                 const formData = new FormData();
                 formData.append('file', fileObj.file);
+
+                const nameInput = document.getElementById(`name-${fileObj.id}`);
+                const quoteInput = document.getElementById(`quote-${fileObj.id}`);
+                const name = nameInput ? nameInput.value : "";
+                const quote = quoteInput ? quoteInput.value : "";
+                
+                if (name) formData.append('name', name);
+                if (quote) formData.append('quote', quote);
+
+                if (nameInput) nameInput.readOnly = true;
+                if (quoteInput) quoteInput.readOnly = true;
 
                 const statusEl = document.getElementById(`status-${fileObj.id}`);
                 const barEl = document.getElementById(`bar-${fileObj.id}`);

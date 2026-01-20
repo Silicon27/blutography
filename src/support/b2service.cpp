@@ -26,6 +26,23 @@ static void splitUrl(const std::string& url, std::string& host, std::string& pat
 B2Service::B2Service(std::string keyId, std::string applicationKey, std::string bucketName)
     : keyId_(std::move(keyId)), applicationKey_(std::move(applicationKey)), bucketName_(std::move(bucketName)) {}
 
+std::shared_ptr<B2Service> B2Service::instance() {
+    auto customConfig = drogon::app().getCustomConfig();
+    const auto& b2Config = customConfig["b2"];
+    
+    std::string keyId = b2Config.get("keyId", "").asString();
+    std::string bucketName = b2Config.get("bucketName", "").asString();
+    const char* env_api_key = std::getenv("DB_API_KEY");
+    std::string applicationKey = env_api_key ? env_api_key : "";
+
+    if (keyId.empty() || bucketName.empty() || applicationKey.empty()) {
+        return nullptr;
+    }
+
+    static auto service = std::make_shared<B2Service>(keyId, applicationKey, bucketName);
+    return service;
+}
+
 void B2Service::upload(const std::string& fileName, std::string&& content, std::function<void(bool success, std::string fileId)>&& callback) {
     auto self = shared_from_this();
     auto sharedContent = std::make_shared<std::string>(std::move(content));
@@ -63,6 +80,36 @@ void B2Service::upload(const std::string& fileName, std::string&& content, std::
                     callback(true, fileId);
                 }
             });
+        });
+    });
+}
+
+void B2Service::download(const std::string& fileName, std::function<void(bool success, std::string&& content)>&& callback) {
+    auto self = shared_from_this();
+    getAuth([self, fileName, callback = std::move(callback)](bool success, B2AuthResponse auth) mutable {
+        if (!success) {
+            callback(false, "");
+            return;
+        }
+
+        std::string downloadUrl = auth.downloadUrl + "/file/" + self->bucketName_ + "/" + fileName;
+        std::string host, path;
+        splitUrl(downloadUrl, host, path);
+
+        auto client = drogon::HttpClient::newHttpClient(host);
+        auto req = drogon::HttpRequest::newHttpRequest();
+        req->setPath(path);
+        req->setMethod(drogon::Get);
+        req->addHeader("Authorization", auth.authorizationToken);
+
+        client->sendRequest(req, [callback = std::move(callback)](drogon::ReqResult result, const drogon::HttpResponsePtr& resp) mutable {
+            if (result == drogon::ReqResult::Ok && resp->statusCode() == drogon::k200OK) {
+                std::string body(resp->body().data(), resp->body().size());
+                callback(true, std::move(body));
+            } else {
+                LOG_ERROR << "B2 Download failed for " << result << " Status: " << (resp ? (int)resp->statusCode() : 0);
+                callback(false, "");
+            }
         });
     });
 }

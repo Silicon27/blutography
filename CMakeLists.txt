@@ -1,86 +1,55 @@
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 3.15)
 project(blutography CXX)
 
-include(CheckIncludeFileCXX)
-
-check_include_file_cxx(any HAS_ANY)
-check_include_file_cxx(string_view HAS_STRING_VIEW)
-check_include_file_cxx(coroutine HAS_COROUTINE)
-#[[if (NOT "${CMAKE_CXX_STANDARD}" STREQUAL "")
-    # Do nothing
-elseif (HAS_ANY AND HAS_STRING_VIEW AND HAS_COROUTINE)
-    set(CMAKE_CXX_STANDARD 20)
-elseif (HAS_ANY AND HAS_STRING_VIEW)
-    set(CMAKE_CXX_STANDARD 17)
-else ()
-    set(CMAKE_CXX_STANDARD 14)
-endif ()]]
 set(CMAKE_CXX_STANDARD 20)
-
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
-
-# ##############################################################################
-# If you include the drogon source code locally in your project, use this method
-# to add drogon
-# add_subdirectory(drogon)
-# target_link_libraries(${PROJECT_NAME} PRIVATE drogon)
-#
-# and comment out the following lines
+# Dependencies
 find_package(Drogon CONFIG REQUIRED)
 find_package(yaml-cpp REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon yaml-cpp::yaml-cpp)
 
-# ##############################################################################
+# TurboJPEG
+find_path(TURBOJPEG_INCLUDE_DIR NAMES turbojpeg.h PATHS /opt/homebrew/include /usr/local/include)
+find_library(TURBOJPEG_LIBRARY NAMES turbojpeg PATHS /opt/homebrew/lib /usr/local/lib)
 
-if (CMAKE_CXX_STANDARD LESS 17)
-    message(FATAL_ERROR "c++17 or higher is required")
-elseif (CMAKE_CXX_STANDARD LESS 20)
-    message(STATUS "use c++17")
-else ()
-    message(STATUS "use c++20")
-endif ()
+if(NOT TURBOJPEG_INCLUDE_DIR OR NOT TURBOJPEG_LIBRARY)
+    message(FATAL_ERROR "TurboJPEG not found!")
+endif()
 
-set(CTL_SRC
-        src/controllers/home.cc
-        src/controllers/gallery.cpp
-        src/controllers/admin.cpp)
-set(SUPPORT_SRC src/support/b2service.cpp)
-set(FILTER_SRC src/filters/adminfilter.cpp)
-aux_source_directory(plugins PLUGIN_SRC)
-aux_source_directory(src/models MODEL_SRC)
-
-drogon_create_views(${PROJECT_NAME} src/views
-        ${CMAKE_CURRENT_BINARY_DIR})
-# use the following line to create views with namespaces.
-# drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
-#                     ${CMAKE_CURRENT_BINARY_DIR} TRUE)
-# use the following line to create views with namespace CHANGE_ME prefixed
-# and path namespaces.
-# drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
-#                     ${CMAKE_CURRENT_BINARY_DIR} TRUE CHANGE_ME)
-
-target_include_directories(${PROJECT_NAME}
-        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-        src/models
-        include)
-include_directories(SYSTEM
-    include/
+# Source Files
+set(SRC_FILES
+    src/main.cpp
+    src/controllers/home.cc
+    src/controllers/gallery.cpp
+    src/controllers/admin.cpp
+    src/support/b2service.cpp
+    src/support/image_utils.cpp
+    src/support/gallery_storage.cpp
+    src/filters/adminfilter.cpp
 )
-target_sources(${PROJECT_NAME}
-        PRIVATE
-        ${SRC_DIR}
-        ${CTL_SRC}
-        ${SUPPORT_SRC}
-        ${FILTER_SRC}
-        ${PLUGIN_SRC}
-        ${MODEL_SRC})
-# ##############################################################################
-# uncomment the following line for dynamically loading views
-# set_property(TARGET ${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)
 
-# ##############################################################################
+# Executable
+add_executable(blutography ${SRC_FILES})
 
-add_subdirectory(test)
+# Views
+drogon_create_views(blutography src/views ${CMAKE_CURRENT_BINARY_DIR})
+
+target_include_directories(blutography
+    PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${TURBOJPEG_INCLUDE_DIR}
+    src/models
+    include
+)
+
+target_link_libraries(blutography PRIVATE 
+    Drogon::Drogon 
+    yaml-cpp::yaml-cpp 
+    ${TURBOJPEG_LIBRARY}
+)
+
+# Tests
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
+    add_subdirectory(test)
+endif()
