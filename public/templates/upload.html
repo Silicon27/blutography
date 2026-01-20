@@ -3,80 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blutography - Admin Upload</title>
+    <title>BLUTOGRAPHY - IMAGE INGESTION</title>
     <link rel="stylesheet" href="/styles/home.css">
     <style>
-        .upload-container {
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.02);
-        }
-        .upload-container h2 {
-            margin-top: 0;
-            font-family: "SF Mono", monospace;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-        .upload-container p {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
-        }
-        .upload-container input[type="file"] {
-            margin-bottom: 20px;
+        body {
+            background-color: #0c0c0c;
             color: #fff;
-            font-size: 0.8rem;
-        }
-        .upload-container button {
-            background-color: #fff;
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-family: "SF Mono", monospace;
-            text-transform: uppercase;
-            font-size: 0.7rem;
-            letter-spacing: 0.1em;
-            transition: opacity 0.2s;
-        }
-        .upload-container button:hover {
-            opacity: 0.8;
+            overflow-x: hidden;
         }
 
-        @media (max-width: 768px) {
-            .upload-container {
-                width: 100%;
-                box-sizing: border-box;
-                margin: 20px 0;
-            }
-            main {
-                padding: 1.5rem !important;
-            }
+        .upload-viewfinder {
+            position: relative;
+            width: 800px;
+            max-width: 95vw;
+            min-height: 500px;
+            margin: 40px auto;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.005);
+            padding: 40px;
+            box-sizing: border-box;
         }
+
+        .drop-zone {
+            flex: 1;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-height: 200px;
+        }
+
+        .drop-zone.dragover {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .drop-zone p {
+            font-family: "SF Mono", monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .file-list {
+            margin-top: 30px;
+            width: 100%;
+            font-family: "SF Mono", monospace;
+            font-size: 10px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            gap: 20px;
+        }
+
+        .file-info {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            text-transform: uppercase;
+        }
+
+        .file-name {
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-status {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .progress-container {
+            width: 150px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .progress-bar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: #fff;
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+
+        .upload-controls {
+            margin-top: 40px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 20px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 10px 25px;
+            font-family: "SF Mono", monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background: #fff;
+            color: #000;
+        }
+
+        button:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+
+        .upload-metadata {
+            position: absolute;
+            bottom: 20px;
+            left: 40px;
+            right: 40px;
+            display: flex;
+            justify-content: space-between;
+            font-family: "SF Mono", monospace;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        .upload-metadata span {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Viewfinder Brackets */
+        .bracket {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+        }
+        .tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+        .bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+        .br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+        .back-link {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            font-family: "SF Mono", monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.3);
+            text-decoration: none;
+            letter-spacing: 2px;
+            transition: color 0.3s;
+            z-index: 100;
+        }
+        .back-link:hover { color: #fff; }
+
+        .success-mark { color: #44ff44; }
+        .error-mark { color: #ff4444; }
+
     </style>
 </head>
 <body>
-    <div class="page">
-        <nav class="sidebar">
-            <h1>Blutography</h1>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/upload">Upload</a></li>
-            </ul>
-        </nav>
-        <main style="padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
-            <div class="upload-container">
-                <h2>Admin Image Upload</h2>
-                <p>Authorized personnel only. Sessions expire after 3600 seconds.</p>
-                <form action="/upload" method="post" enctype="multipart/form-data">
-                    <input type="file" name="file" accept="image/*" required>
-                    <br>
-                    <button type="submit">Upload Image</button>
-                </form>
-            </div>
-        </main>
+    <a href="/" class="back-link">Return</a>
+
+    <div class="upload-viewfinder">
+        <div class="bracket tl"></div>
+        <div class="bracket tr"></div>
+        <div class="bracket bl"></div>
+        <div class="bracket br"></div>
+
+        <div class="drop-zone" id="drop-zone">
+            <p>Drag & Drop images or click to select</p>
+            <input type="file" id="file-input" multiple accept="image/*" style="display: none;">
+        </div>
+
+        <div class="file-list" id="file-list">
+            <!-- Files will appear here -->
+        </div>
+
+        <div class="upload-controls">
+            <button id="clear-btn">Clear All</button>
+            <button id="upload-btn" disabled>Ingest to Database</button>
+        </div>
+
+        <div class="upload-metadata">
+            <div>Sensor // <span>Active</span></div>
+            <div>Auth // <span>Verified</span></div>
+            <div>B2_Uplink // <span>Standby</span></div>
+            <div id="upload-clock">00:00:00</div>
+        </div>
     </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+        const uploadBtn = document.getElementById('upload-btn');
+        const clearBtn = document.getElementById('clear-btn');
+
+        let queuedFiles = [];
+
+        dropZone.onclick = () => fileInput.click();
+
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        };
+
+        dropZone.ondragleave = () => {
+            dropZone.classList.remove('dragover');
+        };
+
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        };
+
+        fileInput.onchange = (e) => {
+            handleFiles(e.target.files);
+        };
+
+        function handleFiles(files) {
+            for (const file of files) {
+                if (queuedFiles.find(f => f.name === file.name && f.size === file.size)) continue;
+                
+                const fileObj = {
+                    file: file,
+                    id: Math.random().toString(36).substr(2, 9),
+                    status: 'queued'
+                };
+                queuedFiles.push(fileObj);
+                renderFile(fileObj);
+            }
+            updateButtons();
+        }
+
+        function renderFile(fileObj) {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.id = `item-${fileObj.id}`;
+            item.innerHTML = `
+                <div class="file-info">
+                    <div class="file-name">${fileObj.file.name}</div>
+                    <div class="file-status" id="status-${fileObj.id}">Queued // ${(fileObj.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="bar-${fileObj.id}"></div>
+                </div>
+            `;
+            fileList.appendChild(item);
+        }
+
+        function updateButtons() {
+            uploadBtn.disabled = queuedFiles.length === 0 || queuedFiles.every(f => f.status !== 'queued');
+        }
+
+        clearBtn.onclick = () => {
+            queuedFiles = [];
+            fileList.innerHTML = '';
+            updateButtons();
+        };
+
+        uploadBtn.onclick = async () => {
+            uploadBtn.disabled = true;
+            clearBtn.disabled = true;
+
+            const filesToUpload = queuedFiles.filter(f => f.status === 'queued');
+            
+            for (const fileObj of filesToUpload) {
+                fileObj.status = 'uploading';
+                await uploadFile(fileObj);
+            }
+
+            clearBtn.disabled = false;
+        };
+
+        function uploadFile(fileObj) {
+            return new Promise((resolve) => {
+                const xhr = new XMLHttpRequest();
+                const formData = new FormData();
+                formData.append('file', fileObj.file);
+
+                const statusEl = document.getElementById(`status-${fileObj.id}`);
+                const barEl = document.getElementById(`bar-${fileObj.id}`);
+
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = (e.loaded / e.total * 100).toFixed(0);
+                        barEl.style.width = percent + '%';
+                        if (percent >= 100) {
+                            statusEl.innerText = `Ingesting // Database Uplink`;
+                        } else {
+                            statusEl.innerText = `Transferring // ${percent}%`;
+                        }
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        const result = response[0]; // We send one file at a time
+                        if (result && result.success) {
+                            statusEl.innerHTML = '<span class="success-mark">Captured // Database OK</span>';
+                            fileObj.status = 'done';
+                        } else {
+                            statusEl.innerHTML = '<span class="error-mark">Error // Database Fail</span>';
+                            fileObj.status = 'error';
+                        }
+                    } else {
+                        statusEl.innerHTML = '<span class="error-mark">Error // Uplink Fail</span>';
+                        fileObj.status = 'error';
+                    }
+                    resolve();
+                };
+
+                xhr.onerror = () => {
+                    statusEl.innerHTML = '<span class="error-mark">Error // Connection Lost</span>';
+                    fileObj.status = 'error';
+                    resolve();
+                };
+
+                xhr.open('POST', '/upload', true);
+                xhr.send(formData);
+            });
+        }
+
+        function updateUploadClock() {
+            const now = new Date();
+            const time = now.toTimeString().split(' ')[0];
+            document.getElementById('upload-clock').innerText = time;
+        }
+        setInterval(updateUploadClock, 1000);
+        updateUploadClock();
+    </script>
 </body>
 </html>

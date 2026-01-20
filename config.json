@@ -288,11 +288,11 @@
         "br_static": true,
         //client_max_body_size: Set the maximum body size of HTTP requests received by drogon. The default value is "1M".
         //One can set it to "1024", "1k", "10M", "1G", etc. Setting it to "" means no limit.
-        "client_max_body_size": "1M",
+        "client_max_body_size": "100M",
         //max_memory_body_size: Set the maximum body size in memory of HTTP requests received by drogon. The default value is "64K" bytes.
         //If the body size of a HTTP request exceeds this limit, the body is stored to a temporary file for processing.
         //Setting it to "" means no limit.
-        "client_max_memory_body_size": "64K",
+        "client_max_memory_body_size": "1M",
         //client_max_websocket_message_size: Set the maximum size of messages sent by WebSocket client. The default value is "128K".
         //One can set it to "1024", "1k", "10M", "1G", etc. Setting it to "" means no limit.
         "client_max_websocket_message_size": "128K",
@@ -338,5 +338,10 @@
         }
     ],
     //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method. 
-    "custom_config": {}
+    "custom_config": {
+        "b2": {
+            "keyId": "003573ec03530b50000000001",
+            "bucketName": "portfolio-gallery-image-bucket"
+        }
+    }
 }

@@ -160,8 +160,9 @@
         <div class="bracket br"></div>
         <div class="center-cross"></div>
         
-        <form action="/login" method="post">
+        <form action="/login" method="post" id="loginForm">
             <input type="password" name="password" placeholder="ENTER ACCESS KEY" autofocus required autocomplete="off">
+            <button type="submit" style="display:none;"></button>
             <div id="status" class="status-msg">System: Idle</div>
         </form>
 
@@ -175,22 +176,31 @@
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
+        const status = document.getElementById('status');
+        const loginForm = document.getElementById('loginForm');
+        
         if (urlParams.has('error')) {
-            const status = document.getElementById('status');
             status.innerText = 'Error: Access Denied';
             status.classList.add('error');
         }
         
         const input = document.querySelector('input');
         input.addEventListener('input', (e) => {
-            const status = document.getElementById('status');
             if (e.target.value.length > 0) {
                 status.innerText = 'Key: Captured';
+                status.classList.remove('error');
                 status.style.color = 'rgba(255,255,255,0.6)';
             } else {
                 status.innerText = 'System: Idle';
                 status.style.color = '#444';
             }
+        });
+
+        loginForm.addEventListener('submit', () => {
+            status.innerText = 'System: Authenticating...';
+            status.style.color = '#fff';
+            // Use readOnly instead of disabled to ensure the value is still sent
+            input.readOnly = true;
         });
 
         function updateClock() {

@@ -47,6 +47,7 @@ set(CTL_SRC
         src/controllers/home.cc
         src/controllers/gallery.cpp
         src/controllers/admin.cpp)
+set(SUPPORT_SRC src/support/b2service.cpp)
 set(FILTER_SRC src/filters/adminfilter.cpp)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(src/models MODEL_SRC)
@@ -72,6 +73,7 @@ target_sources(${PROJECT_NAME}
         PRIVATE
         ${SRC_DIR}
         ${CTL_SRC}
+        ${SUPPORT_SRC}
         ${FILTER_SRC}
         ${PLUGIN_SRC}
         ${MODEL_SRC})
