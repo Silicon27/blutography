@@ -43,8 +43,11 @@ else ()
     message(STATUS "use c++20")
 endif ()
 
-aux_source_directory(src/controllers CTL_SRC)
-aux_source_directory(src/filters FILTER_SRC)
+set(CTL_SRC
+        src/controllers/home.cc
+        src/controllers/gallery.cpp
+        src/controllers/admin.cpp)
+set(FILTER_SRC src/filters/adminfilter.cpp)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(src/models MODEL_SRC)
 

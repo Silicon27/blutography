@@ -5,16 +5,30 @@
 
 namespace blutography {
     void GalleryController::get(const drogon::HttpRequestPtr& req, Callback_t callback) {
-        auto resp = drogon::HttpResponse::newHttpResponse();
+        // Offload to background loop to keep IO threads free for more users
+        drogon::app().getLoop()->queueInLoop([callback]() {
+            auto resp = drogon::HttpResponse::newHttpResponse();
+            // TODO: Get preview on-server and serve to client
 
-        // check on-server cache for image before querying database
-        callback(resp);
+
+
+
+            // TODO: Implement a custom upload handler for images uploaded by me, the admin
+            // this is to void the difficulties of creating a lower resolution image and storing as preview manually
+            // on-server and then uploading the high fidelity version to the database
+            // NOTE: would require authentication
+            callback(resp);
+        });
     }
 
     void GalleryController::get_image(const drogon::HttpRequestPtr& req, Callback_t callback, std::string&& img_id) {
-        auto resp = drogon::HttpResponse::newHttpResponse();
-        
-        // placeholder for getting image by id
-        callback(resp);
+        // Offload to background loop to keep IO threads free for more users
+        drogon::app().getLoop()->queueInLoop([callback, id = std::move(img_id)]() {
+            auto resp = drogon::HttpResponse::newHttpResponse();
+            // TODO: Implement image retrieval by id
+
+
+            callback(resp);
+        });
     }
 }

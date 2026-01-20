@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const slidesContainer = document.getElementById('slides-container');
     const dotsContainer = document.getElementById('dots-container');
-    const cacheName = 'blutography-assets-v5';
 
     if (!slidesContainer || !dotsContainer) {
         console.error('Required containers not found');
@@ -12,7 +11,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let currentSlide = 0;
     let slideInterval;
-    let imageObjectURLs = [];
     let imageNames = [];
 
     async function init() {
@@ -24,11 +22,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             imageNames = await response.json();
             console.log('Manifest loaded:', imageNames);
 
-            // Initialize placeholders
+            if (imageNames.length === 0) {
+                throw new Error('Manifest is empty');
+            }
+
+            // Initialize placeholders and images
             imageNames.forEach((name, index) => {
                 const img = document.createElement('img');
                 img.alt = `Slide ${index + 1}`;
-                if (index === 0) img.classList.add('active');
+                if (index === 0) {
+                    img.classList.add('active');
+                    // Load first image immediately
+                    img.src = `/assets/${name}`;
+                }
                 slidesContainer.appendChild(img);
 
                 const dot = document.createElement('div');
@@ -40,53 +46,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 dotsContainer.appendChild(dot);
             });
 
-            // Start sequential loading
-            loadImagesSequentially();
+            // Start loading other images after a short delay to prioritize the first one
+            setTimeout(() => {
+                const imgElements = slidesContainer.querySelectorAll('img');
+                for (let i = 1; i < imageNames.length; i++) {
+                    imgElements[i].src = `/assets/${imageNames[i]}`;
+                }
+            }, 100);
             
             // Start cycle
             startInterval();
         } catch (error) {
             slidesContainer.innerHTML = `<div style="color: white; padding: 20px;">Failed to initialize slideshow. <br><small>Error: ${error.message}</small></div>`;
             console.error('Init failed:', error);
-        }
-    }
-
-    async function loadImagesSequentially() {
-        const cache = await caches.open(cacheName);
-        const imgElements = slidesContainer.querySelectorAll('img');
-
-        for (let i = 0; i < imageNames.length; i++) {
-            const name = imageNames[i];
-            const url = `/assets/${name}`;
-            
-            try {
-                let response = await cache.match(url);
-                if (!response) {
-                    console.log(`Fetching ${name} (Smallest first loading)...`);
-                    response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    await cache.put(url, response.clone());
-                } else {
-                    console.log(`${name} loaded from cache`);
-                }
-
-                const blob = await response.blob();
-                const objectUrl = URL.createObjectURL(blob);
-                imageObjectURLs[i] = objectUrl;
-
-                imgElements[i].onload = () => {
-                    console.log(`Image rendered: ${name}`);
-                };
-                imgElements[i].onerror = () => {
-                    console.error(`Render failed: ${name}`);
-                };
-
-                imgElements[i].src = objectUrl;
-                
-                // If it's the first image, it's already active and now has a src
-            } catch (e) {
-                console.error(`Failed to load ${name}:`, e);
-            }
         }
     }
 
@@ -105,7 +77,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         currentSlide = index;
 
-        if (imgs[currentSlide]) imgs[currentSlide].classList.add('active');
+        if (imgs[currentSlide]) {
+            // Ensure src is set if it wasn't already (though it should be)
+            if (!imgs[currentSlide].getAttribute('src')) {
+                 imgs[currentSlide].src = `/assets/${imageNames[currentSlide]}`;
+            }
+            imgs[currentSlide].classList.add('active');
+        }
         if (dots[currentSlide]) dots[currentSlide].classList.add('active');
 
         if (instant) {

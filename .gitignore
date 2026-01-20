@@ -559,9 +559,11 @@ FodyWeavers.xsd
 *.tlog
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij+all,visualstudio,visualstudiocode,cmake,c,c++
-
+cache/
+logs/
 
 assets_src/*.jpg
 assets_src/*.png
 assets_src/*.tif
 assets_src/*.raw
+launch.sh

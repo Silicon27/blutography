@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blutography - Home</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="stylesheet" href="/styles/home.css">
@@ -25,11 +26,57 @@
     </nav>
 
     <main class="slideshow" id="slideshow">
+        <div class="bracket tl"></div>
+        <div class="bracket tr"></div>
+        <div class="bracket bl"></div>
+        <div class="bracket br"></div>
+        <div class="center-cross"></div>
+
         <div class="slides-container" id="slides-container"></div>
         <div class="dots-container" id="dots-container"></div>
+
+        <div class="home-metadata">
+            <div>View // <span>Overview</span></div>
+            <div>Focus // <span>Infinity</span></div>
+            <div id="home-clock">00:00:00</div>
+        </div>
     </main>
 </div>
 
-<script src="/scripts/slideshow.js"></script>
+    <div class="mobile-notice" id="mobile-notice">
+        <div class="notice-content">
+            <span class="notice-tag">Notice</span>
+            <p>Viewport size too small. For the intended experience, please use a larger device. Showing minimal preview.</p>
+        </div>
+        <div class="notice-progress"></div>
+    </div>
+
+    <script src="/scripts/slideshow.js"></script>
+    <script>
+        function updateHomeClock() {
+            const now = new Date();
+            const time = now.toTimeString().split(' ')[0];
+            const clockEl = document.getElementById('home-clock');
+            if (clockEl) clockEl.innerText = time;
+        }
+        setInterval(updateHomeClock, 1000);
+        updateHomeClock();
+
+        // Mobile notice logic
+        window.addEventListener('load', () => {
+            const notice = document.getElementById('mobile-notice');
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile && notice) {
+                notice.classList.add('show');
+                setTimeout(() => {
+                    notice.classList.remove('show');
+                    setTimeout(() => notice.style.display = 'none', 500);
+                }, 10000);
+            } else if (notice) {
+                notice.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
